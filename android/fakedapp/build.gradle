@@ -71,8 +71,8 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.5.1'
     implementation 'com.google.android.material:material:1.7.0'
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.72'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
+    implementation "io.github.dlgrech:ksol-rpc:1.1.0"
 
     // Testing-only dependencies
     androidTestImplementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.22"

@@ -37,11 +37,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
 
-    val supportedTxnVersions = listOf(MemoTransactionVersion.Legacy, MemoTransactionVersion.V0)
-    val transactionUseCase get() = when(_uiState.value.txnVersion) {
-        MemoTransactionVersion.Legacy -> MemoTransactionLegacyUseCase
-        MemoTransactionVersion.V0 -> MemoTransactionV0UseCase
-    }
+    val supportedTxnVersions = listOf(MemoTransactionVersion.Legacy)
 
     private val mobileWalletAdapterClientSem = Semaphore(1) // allow only a single MWA connection at a time
 
@@ -101,7 +97,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setTransactionVersion(txnVersion: MemoTransactionVersion) {
-        _uiState.update { it.copy(txnVersion = txnVersion) }
+        // Coming soon: Add support back for txn versions
     }
 
     fun signTransactions(sender: StartActivityForResultSender, numTransactions: Int) = viewModelScope.launch {
@@ -114,14 +110,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (!authorized) {
                 return@localAssociateAndExecute null
             }
-            val (blockhash, _) = try {
+            val blockhash = try {
                 latestBlockhash.await()
             } catch (e: GetLatestBlockhashUseCase.GetLatestBlockhashFailedException) {
                 Log.e(TAG, "Failed retrieving latest blockhash", e)
                 return@localAssociateAndExecute null
             }
             val transactions = Array(numTransactions) {
-                transactionUseCase.create(uiState.value.publicKey!!, blockhash)
+                MemoTransactionUseCase.create(uiState.value.publicKey!!, blockhash)
             }
             doSignTransactions(client, transactions)
         }
@@ -129,7 +125,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (signedTransactions != null) {
             val verified = signedTransactions.map { txn ->
                 try {
-                    transactionUseCase.verify(uiState.value.publicKey!!, txn)
+                    MemoTransactionUseCase.verify(uiState.value.publicKey!!, txn)
                     true
                 } catch (e: IllegalArgumentException) {
                     Log.e(TAG, "Memo transaction signature verification failed", e)
@@ -154,14 +150,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (!authorized) {
                 return@localAssociateAndExecute null
             }
-            val (blockhash, _) = try {
+            val blockhash = try {
                 latestBlockhash.await()
             } catch (e: GetLatestBlockhashUseCase.GetLatestBlockhashFailedException) {
                 Log.e(TAG, "Failed retrieving latest blockhash", e)
                 return@localAssociateAndExecute null
             }
             val transactions = Array(1) {
-                transactionUseCase.create(uiState.value.publicKey!!, blockhash)
+                MemoTransactionUseCase.create(uiState.value.publicKey!!, blockhash)
             }
             doSignTransactions(client, transactions)
         }
@@ -169,7 +165,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (signedTransactions != null) {
             val verified = signedTransactions.map { txn ->
                 try {
-                    transactionUseCase.verify(uiState.value.publicKey!!, txn)
+                    MemoTransactionUseCase.verify(uiState.value.publicKey!!, txn)
                     true
                 } catch (e: IllegalArgumentException) {
                     Log.e(TAG, "Memo transaction signature verification failed", e)
@@ -209,16 +205,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (!authorized) {
                 return@localAssociateAndExecute null
             }
-            val (blockhash, slot) = try {
+            val blockhash = try {
                 latestBlockhash.await()
             } catch (e: GetLatestBlockhashUseCase.GetLatestBlockhashFailedException) {
                 Log.e(TAG, "Failed retrieving latest blockhash", e)
                 return@localAssociateAndExecute null
             }
             val transactions = Array(numTransactions) {
-                transactionUseCase.create(uiState.value.publicKey!!, blockhash)
+                MemoTransactionUseCase.create(uiState.value.publicKey!!, blockhash)
             }
-            doSignAndSendTransactions(client, transactions, slot)
+            doSignAndSendTransactions(client, transactions, null)
         }
 
         showMessage(if (signatures != null) R.string.msg_request_succeeded else R.string.msg_request_failed)
